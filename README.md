@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🏥 Clinic Appointment System API
 
 A RESTful backend API for managing a clinic appointment system.
@@ -428,3 +429,7 @@ Backend Developer Portfolio Project
 
 GitHub:
 https://github.com/aylinparvizii
+=======
+# clinic-appointment-system
+Backend REST API for a Clinic Appointment System using FastAPI, SQLAlchemy, SQL Server, JWT Authentication, RBAC, and automated tests with Pytest.
+>>>>>>> e05a4eaea0a250f5f10182bbe88beb2444f52379
