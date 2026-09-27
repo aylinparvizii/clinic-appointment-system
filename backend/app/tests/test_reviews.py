@@ -13,25 +13,21 @@ def test_doctor_reviews(test_client):
         list
     )
 
-def test_create_review(
+def test_create_duplicate_review(
     test_client,
     patient_token
 ):
-
     response = test_client.post(
         "/reviews/",
         headers={
-            "Authorization":
-            f"Bearer {patient_token}"
+            "Authorization": f"Bearer {patient_token}"
         },
         json={
-            "doctor_id":1,
-            "rating":5,
-            "comment":"good"
+            "doctor_id": 1,
+            "rating": 5,
+            "comment": "good"
         }
     )
 
-    print(response.status_code)
-    print(response.json())
-
-    assert response.status_code == 200
+    assert response.status_code == 400
+    assert response.json()["detail"] == "You already reviewed this doctor"

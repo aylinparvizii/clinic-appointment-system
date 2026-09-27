@@ -11,21 +11,6 @@ def get_all_doctors(
     skip: int = 0,
     limit: int = 10
 ):
-    user = db.query(User).filter(
-        User.id == user_id
-    ).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found"
-        )
-
-    if user.role != "doctor":
-        raise HTTPException(
-            status_code=403,
-            detail="Only doctor users can create doctor profile"
-        )
     
     return (
         db.query(Doctor)
