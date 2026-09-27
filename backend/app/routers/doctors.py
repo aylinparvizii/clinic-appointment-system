@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database.dependencies import get_db
-from ..core.security import get_current_admin
+from ..core.security import get_current_admin , get_current_user
 from ..schemas.doctor import (
     DoctorCreate,
     DoctorResponse
@@ -77,23 +77,27 @@ def doctors_by_specialty(
 
 
 @router.post(
-    "/",
+    "/profile",
     response_model=DoctorResponse
 )
-def create_doctor(
+def create_my_doctor_profile(
     doctor: DoctorCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_admin)
+    current_user=Depends(get_current_user)
 ):
 
-    doctor = create_doctor_profile(
-    db,
-    doctor.user_id,
-    doctor.specialty_code,
-    doctor.experience_years
-    )
+    if current_user.role != "doctor":
+        raise HTTPException(
+            status_code=403,
+            detail="Only doctors can create a doctor profile"
+        )
 
-    return doctor
+    return create_doctor_profile(
+        db,
+        current_user.id,
+        doctor.specialty_code,
+        doctor.experience_years
+    )
 
 
 @router.put(

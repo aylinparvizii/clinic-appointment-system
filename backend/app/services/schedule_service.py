@@ -49,7 +49,15 @@ def get_doctor_schedules(
     )
 
 
-
+def filter_available_schedules(schedules):
+    """
+    Return only schedules that are currently available.
+    """
+    return [
+        schedule
+        for schedule in schedules
+        if schedule.status == "available"
+    ]
 # گرفتن فقط تایم‌های آزاد یک دکتر
 def get_available_schedules(
     db: Session,

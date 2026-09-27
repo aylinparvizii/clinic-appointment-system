@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-
+from ..models.patient import Patient
 from ..models.user import User
 from ..schemas.user import UserRegister
 from ..core.security import hash_password
@@ -44,9 +44,17 @@ def create_user(
 
 
     db.add(db_user)
+    db.flush()
+
+    if db_user.role == "patient":
+        patient = Patient(
+            user_id=db_user.id
+        )
+        db.add(patient)
+        
     db.commit()
     db.refresh(db_user)
-
+    
     logger.info(
     f"User created: id={db_user.id}, role={db_user.role}"
     )

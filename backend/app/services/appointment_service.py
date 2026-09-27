@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-
+from sqlalchemy import select, text
+from sqlalchemy.exc import SQLAlchemyError,OperationalError
 from ..models.appointment import Appointment
 from ..models.schedule import Schedule
 from app.core.logger import logger
+
 
 # ==========================
 # ایجاد رزرو
@@ -16,47 +18,66 @@ def create_appointment(
     notes: str | None = None
 ):
 
-    schedule = db.query(
-        Schedule
-    ).filter(
-        Schedule.id == schedule_id
-    ).first()
+    try:
 
-
-    if not schedule:
-        raise HTTPException(
-            status_code=404,
-            detail="Schedule not found"
+        schedule = (
+            db.query(Schedule)
+            .with_hint(
+                Schedule,
+                "WITH (UPDLOCK, ROWLOCK, HOLDLOCK)",
+                dialect_name="mssql"
+            )
+            .filter(
+                Schedule.id == schedule_id
+            )
+            .first()
         )
 
+        if not schedule:
+            raise HTTPException(
+                status_code=404,
+                detail="Schedule not found"
+            )
 
-    if schedule.status != "available":
-        raise HTTPException(
-            status_code=400,
-            detail="Schedule is not available"
+        if schedule.status != "available":
+            raise HTTPException(
+                status_code=400,
+                detail="Schedule is not available"
+            )
+
+        appointment = Appointment(
+            patient_id=patient_id,
+            doctor_id=schedule.doctor_id,
+            schedule_id=schedule.id,
+            status="scheduled",
+            notes=notes
         )
 
+        schedule.status = "busy"
 
-    appointment = Appointment(
-        patient_id=patient_id,
-        doctor_id=schedule.doctor_id,
-        schedule_id=schedule.id,
-        status="scheduled",
-        notes=notes
-    )
+        db.add(appointment)
 
+        db.commit()
 
-    schedule.status = "busy"
+        db.refresh(appointment)
 
+        logger.info(
+            f"Appointment {appointment.id} saved in database"
+        )
 
-    db.add(appointment)
-    db.commit()
-    db.refresh(appointment)
+        return appointment
 
-    logger.info(
-        f"Appointment {appointment.id} saved in database"
-    )
-    return appointment
+    except OperationalError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail="This schedule is being reserved by another request."
+        )
+
+    except Exception:
+        db.rollback()
+        raise
 # ==========================
 # گرفتن یک رزرو
 # ==========================

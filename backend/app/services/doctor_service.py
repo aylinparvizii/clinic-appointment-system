@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-
+from ..models.user import User
 from ..models.doctor import Doctor
 from ..models.specialty import Specialty
 from ..schemas.doctor import DoctorCreate
@@ -11,6 +11,22 @@ def get_all_doctors(
     skip: int = 0,
     limit: int = 10
 ):
+    user = db.query(User).filter(
+        User.id == user_id
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    if user.role != "doctor":
+        raise HTTPException(
+            status_code=403,
+            detail="Only doctor users can create doctor profile"
+        )
+    
     return (
         db.query(Doctor)
         .order_by(Doctor.id)
@@ -60,6 +76,31 @@ def create_doctor_profile(
     specialty_code: str,
     experience_years: int
 ):
+    user = db.query(User).filter(
+        User.id == user_id
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    if user.role != "doctor":
+        raise HTTPException(
+            status_code=403,
+            detail="Only doctor users can create doctor profile"
+        )
+
+    existing = db.query(Doctor).filter(
+        Doctor.user_id == user_id
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Doctor profile already exists"
+        )
     specialty = db.query(Specialty).filter(
         Specialty.code == specialty_code
     ).first()
@@ -153,3 +194,4 @@ def delete_doctor(
     db.commit()
 
     return True
+
